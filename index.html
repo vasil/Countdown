@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Clock with Countdown</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #clock {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: rotate(0deg);
+        }
+
+        .hour-hand {
+            width: 10px;
+            height: 25%;
+            background-color: black;
+            border-radius: 5px;
+            margin-left: -5px;
+        }
+
+        .minute-hand {
+            width: 8px;
+            height: 35%;
+            background-color: black;
+            border-radius: 4px;
+            margin-left: -4px;
+        }
+
+        .second-hand {
+            width: 4px;
+            height: 45%;
+            background-color: red;
+            border-radius: 2px;
+            margin-left: -2px;
+        }
+
+        #message {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5em;
+            text-align: center;
+            color: white;
+            display: none;
+        }
+
+        #clockCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="message"></div>
+    <div id="clock">
+        <canvas id="clockCanvas"></canvas>
+        <div id="hour" class="hand hour-hand"></div>
+        <div id="minute" class="hand minute-hand"></div>
+        <div id="second" class="hand second-hand"></div>
+    </div>
+
+    <script>
+        let countdownTime = 900; // 15 minutes in seconds
+        let countdownInterval;
+        let countdownStarted = false;
+        let eventsConfig = {
+            event1: { time: 600, message: '10 minutes left' },
+            event2: { time: 300, message: '5 minutes left' },
+        };
+
+        let startAngle;
+        let endAngleFull;
+
+        function startClock() {
+            const hourHand = document.getElementById('hour');
+            const minuteHand = document.getElementById('minute');
+            const secondHand = document.getElementById('second');
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const clockElement = document.getElementById('clock');
+
+            function setCanvasSize() {
+                const rect = clockElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+            }
+
+            function drawClockFace() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Clip the clock face to a circle
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(
+                    canvas.width / 2,
+                    canvas.height / 2,
+                    canvas.width / 2,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.closePath();
+                ctx.clip();
+
+                // Fill the clock face with white color
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.restore();
+            }
+
+            function updateTime() {
+                const now = new Date();
+                const seconds = now.getSeconds();
+                const minutes = now.getMinutes();
+                const hours = now.getHours() % 12;
+
+                const secondDeg = ((seconds / 60) * 360);
+                const minuteDeg = ((minutes / 60) * 360) + ((seconds / 60) * 6);
+                const hourDeg = ((hours / 12) * 360) + ((minutes / 60) * 30);
+
+                secondHand.style.transform = `rotate(${secondDeg}deg)`;
+                minuteHand.style.transform = `rotate(${minuteDeg}deg)`;
+                hourHand.style.transform = `rotate(${hourDeg}deg)`;
+
+                if (!countdownStarted) {
+                    drawClockFace();
+                }
+            }
+
+            setCanvasSize();
+            window.addEventListener('resize', setCanvasSize);
+
+            setInterval(updateTime, 1000);
+            updateTime();
+        }
+
+        function startCountdown() {
+            if (countdownStarted) return;
+            countdownStarted = true;
+
+            const now = new Date();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const minuteAngle = ((minutes / 60) * 360) + ((seconds / 60) * 6);
+            startAngle = ((minuteAngle - 90) * Math.PI) / 180;
+            endAngleFull = startAngle + (90 * Math.PI / 180);
+
+            let timeLeft = countdownTime;
+            const messageElement = document.getElementById('message');
+
+            updateClockFace(timeLeft);
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+
+                updateClockFace(timeLeft);
+
+                checkEventTriggers(timeLeft, messageElement);
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    messageElement.innerHTML = 'Time is up!';
+                    messageElement.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function updateClockFace(timeLeft) {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const totalTime = countdownTime;
+
+            const elapsedTime = totalTime - timeLeft;
+            const elapsedFraction = elapsedTime / totalTime;
+            const angleElapsed = elapsedFraction * (90 * Math.PI / 180);
+            const currentAngle = startAngle + angleElapsed;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Clip the clock face to a circle
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                0,
+                2 * Math.PI
+            );
+            ctx.closePath();
+            ctx.clip();
+
+            // Fill the clock face with white color
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw elapsed time in light gray
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                startAngle,
+                currentAngle,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = 'lightgray';
+            ctx.fill();
+
+            // Determine color based on time left
+            let color;
+            if (timeLeft > 300) {
+                color = 'darkred';
+            } else {
+                color = 'lightcoral';
+            }
+
+            // Draw remaining time in red
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                currentAngle,
+                endAngleFull,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function checkEventTriggers(timeLeft, messageElement) {
+            Object.keys(eventsConfig).forEach(key => {
+                if (timeLeft === eventsConfig[key].time) {
+                    messageElement.innerHTML = eventsConfig[key].message;
+                    messageElement.style.display = 'block';
+
+                    setTimeout(() => {
+                        messageElement.style.display = 'none';
+                    }, 5000);
+                }
+            });
+        }
+
+        function initiateCountdown(e) {
+            if (e.type === 'click' || (e.type === 'keydown' && e.code === 'Space')) {
+                e.preventDefault();
+                startCountdown();
+            }
+        }
+
+        document.body.addEventListener('click', initiateCountdown);
+        document.body.addEventListener('keydown', initiateCountdown);
+
+        startClock();
+    </script>
+
+</body>
+</html>

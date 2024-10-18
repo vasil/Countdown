@@ -96,9 +96,15 @@
         let startAngle;
         let endAngleFull;
 
+        // Base64 encoded pixel art black and white dinosaur image
+        const dinosaurImageSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAIAAACtWK6eAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAF2ElEQVR4nO3dPWgURxgH8Gc0B1mMBWYmItS7ChQp1CyrJJtPILQuSG2GZMgSxF0AodA20i7sLFoosBDWFMXGUInEh2yCeGFYoYypG6ML6kPv/ZFq8YjJk3G1e7c+anq6vq6V9faX2vV+j0+j0eh0Pnoen0fl9bdu3f7D5/0UCAAAAAAAAAAAAAAAAAMDNwS2T5vsEAAAAAAAAAAAAAAAAAADMWKDKwBsAAAAAAAAAAAAAAAAAABiwF+K7AGAAAAAAAAAAAAAAAAAGDA3wt0eAAAAAAAAAAAAAAAAAADGM/C3BwAAAAAAAAAAAAAAAAAAxjPw5wdAAAAAAAAAAAAAAAAAAMYz8NcHgAAAAAAAAAAAAAAAABj+OYFcP8V7e6+VqvV2e/nS9tuTQAAAAAAAAAAAAAAAAAAZq4SwWwAAAAAAAAAAAAAAAAAAbMCbBrCYAAAAAAAAAAAAAAAAAADMWKDF4BsAAAAAAAAAAAAAAAAAABiwF+J7AGAAAAAAAAAAAAAAAAAGDA3wq0eAAAAAAAAAAAAAAAAAADGM/B3BwAAAAAAAAAAAAAAAAAAxjPw5wdAAAAAAAAAAAAAAAAAAMYz8NcHgAAAAAAAAAAAAAAAABj+OYFcP8V7e6+VqvV2e/nS9tuTQAAAAAAAAAAAAAAAAAAZq4SwWwAAAAAAAAAAAAAAAAAAbMCbBrCYAAAAAAAAAAAAAAAAAADMWKDF4BsAAAAAAAAAAAAAAAAAABiwF+J7AGAAAAAAAAAAAAAAAAAGDA3wq0eAAAAAAAAAAAAAAAAAADGM/B3BwAAAAAAAAAAAAAAAAAAxjPw5wdAAAAAAAAAAAAAAAAAAMYz8NcHgAAAAAAAAAAAAAAAABj+OYFcP+V8gXxKpC42gAAAABJRU5ErkJggg==';
+
+        const backgroundImage = new Image();
+        backgroundImage.src = dinosaurImageSrc;
+
         function startClock() {
             const hourHand = document.getElementById('hour');
-            const minuteHand = document.getElementById('minute');
+            const minuteHand = document.getElementElementById('minute');
             const secondHand = document.getElementById('second');
             const canvas = document.getElementById('clockCanvas');
             const ctx = canvas.getContext('2d');
@@ -108,6 +114,9 @@
                 const rect = clockElement.getBoundingClientRect();
                 canvas.width = rect.width;
                 canvas.height = rect.height;
+                if (!countdownStarted) {
+                    drawClockFace();
+                }
             }
 
             function drawClockFace() {
@@ -126,9 +135,14 @@
                 ctx.closePath();
                 ctx.clip();
 
-                // Fill the clock face with white color
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                // Draw the background image
+                if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
+                    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+                } else {
+                    backgroundImage.onload = function() {
+                        ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+                    };
+                }
 
                 ctx.restore();
             }
@@ -200,6 +214,8 @@
             const angleElapsed = elapsedFraction * (90 * Math.PI / 180);
             const currentAngle = startAngle + angleElapsed;
 
+            const firstTenMinutesAngle = startAngle + (600 / totalTime) * (90 * Math.PI / 180);
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Clip the clock face to a circle
@@ -215,9 +231,13 @@
             ctx.closePath();
             ctx.clip();
 
-            // Fill the clock face with white color
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Draw the background image
+            if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
+                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            }
+
+            // Set opacity to 50%
+            ctx.globalAlpha = 0.5;
 
             // Draw elapsed time in light gray
             ctx.beginPath();
@@ -234,15 +254,7 @@
             ctx.fillStyle = 'lightgray';
             ctx.fill();
 
-            // Determine color based on time left
-            let color;
-            if (timeLeft > 300) {
-                color = 'darkred';
-            } else {
-                color = 'lightcoral';
-            }
-
-            // Draw remaining time in red
+            // Draw first 10 minutes in dark red with 50% opacity
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, canvas.height / 2);
             ctx.arc(
@@ -250,12 +262,29 @@
                 canvas.height / 2,
                 canvas.width / 2,
                 currentAngle,
+                firstTenMinutesAngle,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = 'darkred';
+            ctx.fill();
+
+            // Draw last 5 minutes segment from the start in light coral with 50% opacity
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                firstTenMinutesAngle,
                 endAngleFull,
                 false
             );
             ctx.closePath();
-            ctx.fillStyle = color;
+            ctx.fillStyle = 'lightcoral';
             ctx.fill();
+
+            ctx.globalAlpha = 1; // Reset opacity
 
             ctx.restore();
         }

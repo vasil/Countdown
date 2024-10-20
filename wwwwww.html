@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Clock with Countdown</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #clock {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: white;
+            fill-opacity: 40%;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: rotate(0deg);
+        }
+
+        .hour-hand {
+            width: 10px;
+            height: 25%;
+            background-color: black;
+            border-radius: 5px;
+            margin-left: -5px;
+        }
+
+        .minute-hand {
+            width: 8px;
+            height: 35%;
+            background-color: black;
+            border-radius: 4px;
+            margin-left: -4px;
+        }
+
+        .second-hand {
+            width: 4px;
+            height: 45%;
+            background-color: red;
+            border-radius: 2px;
+            margin-left: -2px;
+        }
+
+        #message {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5em;
+            text-align: center;
+            color: white;
+            display: none;
+        }
+
+        #clockCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="message"></div>
+    <div id="clock">
+        <canvas id="clockCanvas"></canvas>
+        <div id="hour" class="hand hour-hand"></div>
+        <div id="minute" class="hand minute-hand"></div>
+        <div id="second" class="hand second-hand"></div>
+    </div>
+
+    <script>
+        // Total countdown time in seconds (15 minutes)
+        const countdownTime = 900;
+
+        let countdownInterval;
+        let countdownStarted = false;
+        const eventsConfig = {
+            event1: { time: 600, message: '10 minutes left' },
+            event2: { time: 300, message: '5 minutes left' },
+        };
+
+        let startAngle;
+        let endAngleFull;
+
+        // Slide constants
+        const minute0 = 'minute-0.png';
+        const minute1 = '';
+        const minute2 = '';
+        const minute3 = 'minute-3.jpg';
+        const minute4 = '';
+        const minute5 = '';
+        const minute6 = '';
+        const minute7 = '';
+        const minute8 = '';
+        const minute9 = '';
+        const minute10 = '';
+        const minute11 = '';
+        const minute12 = '';
+        const minute13 = '';
+        const minute14 = '';
+        const minute15 = '';
+
+        // Array of slides
+        const slides = [
+            minute1,
+            minute2,
+            minute3,
+            minute4,
+            minute5,
+            minute6,
+            minute7,
+            minute8,
+            minute9,
+            minute10,
+            minute11,
+            minute12,
+            minute13,
+            minute14,
+            minute15
+        ];
+
+        let currentSlideIndex = -1; // Start before minute0
+        const backgroundImage = new Image();
+
+        // Initialize with minute0 (dinosaur)
+        backgroundImage.src = minute0;
+
+        backgroundImage.onload = function() {
+            drawClockFace(); // Ensure the image is drawn once loaded
+        };
+
+        backgroundImage.onerror = function() {
+            console.error('Failed to load the background image.');
+        };
+
+        function startClock() {
+            const hourHand = document.getElementById('hour');
+            const minuteHand = document.getElementById('minute');
+            const secondHand = document.getElementById('second');
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const clockElement = document.getElementById('clock');
+
+            function setCanvasSize() {
+                const rect = clockElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                if (!countdownStarted) {
+                    drawClockFace();
+                }
+            }
+
+            function drawClockFace() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Clip the clock face to a circle
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(
+                    canvas.width / 2,
+                    canvas.height / 2,
+                    canvas.width / 2,
+                    0,
+                    2 * Math.PI
+                );
+                ctx.closePath();
+                ctx.clip();
+
+                // Draw the background image with 50% opacity
+                ctx.globalAlpha = 0.5;
+                if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
+                    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+                }
+                ctx.globalAlpha = 1; // Reset opacity
+
+                ctx.restore();
+            }
+
+            function updateTime() {
+                const now = new Date();
+                const seconds = now.getSeconds();
+                const minutes = now.getMinutes();
+                const hours = now.getHours() % 12;
+
+                const secondDeg = ((seconds / 60) * 360);
+                const minuteDeg = ((minutes / 60) * 360) + ((seconds / 60) * 6);
+                const hourDeg = ((hours / 12) * 360) + ((minutes / 60) * 30);
+
+                secondHand.style.transform = `rotate(${secondDeg}deg)`;
+                minuteHand.style.transform = `rotate(${minuteDeg}deg)`;
+                hourHand.style.transform = `rotate(${hourDeg}deg)`;
+
+                if (!countdownStarted) {
+                    drawClockFace();
+                }
+            }
+
+            setCanvasSize();
+            window.addEventListener('resize', setCanvasSize);
+
+            setInterval(updateTime, 1000);
+            updateTime();
+        }
+
+        function startCountdown() {
+            if (countdownStarted) return;
+            countdownStarted = true;
+
+            const now = new Date();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const minuteAngle = ((minutes / 60) * 360) + ((seconds / 60) * 6);
+            startAngle = ((minuteAngle - 90) * Math.PI) / 180;
+            endAngleFull = startAngle + (90 * Math.PI / 180);
+
+            let timeLeft = countdownTime;
+            const messageElement = document.getElementById('message');
+
+            updateClockFace(timeLeft);
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+
+                // Check if it's time to change the slide
+                const passedMinutes = Math.floor((countdownTime - timeLeft) / 60);
+                if (passedMinutes >= 0 && passedMinutes < slides.length) {
+                    if (slides[passedMinutes] !== '') {
+                        currentSlideIndex = passedMinutes;
+                        backgroundImage.src = slides[currentSlideIndex];
+                    }
+                }
+
+                updateClockFace(timeLeft);
+                checkEventTriggers(timeLeft, messageElement);
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    messageElement.innerHTML = 'Time is up!';
+                    messageElement.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function updateClockFace(timeLeft) {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const totalTime = countdownTime;
+
+            const elapsedTime = totalTime - timeLeft;
+            const elapsedFraction = elapsedTime / totalTime;
+            const angleElapsed = elapsedFraction * (90 * Math.PI / 180);
+            const currentAngle = startAngle + angleElapsed;
+
+            const firstTenMinutesAngle = startAngle + (600 / totalTime) * (90 * Math.PI / 180);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Clip the clock face to a circle
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                0,
+                2 * Math.PI
+            );
+            ctx.closePath();
+            ctx.clip();
+
+            // Draw the background image with 50% opacity
+            ctx.globalAlpha = 0.5;
+            if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
+                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            }
+            ctx.globalAlpha = 1; // Reset opacity
+
+            // Draw elapsed time in light gray
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                startAngle,
+                currentAngle,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fill();
+
+            // Set opacity to 50%
+            ctx.globalAlpha = 0.5;
+
+            // Draw remaining time in dark red or light coral with 50% opacity
+            if (timeLeft > 300) { // More than 5 minutes left
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height / 2);
+                ctx.arc(
+                    canvas.width / 2,
+                    canvas.height / 2,
+                    canvas.width / 2,
+                    currentAngle,
+                    endAngleFull,
+                    false
+                );
+                ctx.closePath();
+                ctx.fillStyle = 'darkred';
+                ctx.fill();
+            } else { // Last 5 minutes
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height / 2);
+                ctx.arc(
+                    canvas.width / 2,
+                    canvas.height / 2,
+                    canvas.width / 2,
+                    currentAngle,
+                    endAngleFull,
+                    false
+                );
+                ctx.closePath();
+                ctx.fillStyle = 'lightcoral';
+                ctx.fill();
+            }
+
+            ctx.globalAlpha = 1; // Reset opacity
+
+            ctx.restore();
+        }
+
+        function checkEventTriggers(timeLeft, messageElement) {
+            Object.keys(eventsConfig).forEach(key => {
+                if (timeLeft === eventsConfig[key].time) {
+                    messageElement.innerHTML = eventsConfig[key].message;
+                    messageElement.style.display = 'block';
+
+                    setTimeout(() => {
+                        messageElement.style.display = 'none';
+                    }, 5000);
+                }
+            });
+        }
+
+        function initiateCountdown(e) {
+            if (e.type === 'click' || (e.type === 'keydown' && e.code === 'Space')) {
+                e.preventDefault();
+                startCountdown();
+            }
+        }
+
+        document.body.addEventListener('click', initiateCountdown);
+        document.body.addEventListener('keydown', initiateCountdown);
+
+        startClock();
+    </script>
+
+</body>
+</html>

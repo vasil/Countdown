@@ -22,7 +22,7 @@
             border-radius: 50%;
             overflow: hidden;
             background-color: white;
-            fill-opacity: 40%;
+            fill-opacity: 50%;
         }
 
         .hand {
@@ -184,7 +184,7 @@
                 ctx.clip();
 
                 // Draw the background image with 50% opacity
-                ctx.globalAlpha = 0.5;
+                ctx.globalAlpha = 0.7;
                 if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
                     ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
                 }
@@ -286,7 +286,7 @@
             ctx.clip();
 
             // Draw the background image with 50% opacity
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.9;
             if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
                 ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
             }
@@ -304,11 +304,11 @@
                 false
             );
             ctx.closePath();
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
             ctx.fill();
 
-            // Set opacity to 50%
-            ctx.globalAlpha = 0.5;
+6            // Set opacity to 60%
+            ctx.globalAlpha = 0.6;
 
             // Draw remaining time in dark red or light coral with 50% opacity
             if (timeLeft > 300) { // More than 5 minutes left

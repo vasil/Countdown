@@ -1,8 +1,8 @@
-A<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Interactive Clock with Countdown</title>
+    <title>Interactive Clock with Countdown and Static Noise</title>
     <style>
         body {
             display: flex;
@@ -73,6 +73,31 @@ A<!DOCTYPE html>
             top: 0;
             left: 0;
         }
+
+        #overlayText {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            font-family: "Courier New", Courier, monospace; /* Monotype font */
+        }
+
+        #topText {
+            font-size: 4vmin;
+            color: white;
+            margin-top: 5%;
+        }
+
+        #bottomText {
+            font-size: 3vmin;
+            color: magenta;
+            margin-bottom: 10%;
+        }
     </style>
 </head>
 <body>
@@ -83,6 +108,12 @@ A<!DOCTYPE html>
         <div id="hour" class="hand hour-hand"></div>
         <div id="minute" class="hand minute-hand"></div>
         <div id="second" class="hand second-hand"></div>
+
+        <!-- Overlay text for the first image -->
+        <div id="overlayText">
+            <div id="topText">Vasyl Taneski</div>
+            <div id="bottomText">Retired Programmer</div>
+        </div>
     </div>
 
     <script>
@@ -99,48 +130,31 @@ A<!DOCTYPE html>
         let startAngle;
         let endAngleFull;
 
-        // Slide constants
-        const minute0 = 'xface.png';
-        const minute1 = 'efptoz.jpg';
-        const minute2 = '';
-        const minute3 = 'minute-3.jpg';
-        const minute4 = '';
-        const minute5 = '';
-        const minute6 = '';
-        const minute7 = '';
-        const minute8 = '';
-        const minute9 = '';
-        const minute10 = '';
-        const minute11 = '';
-        const minute12 = '';
-        const minute13 = '';
-        const minute14 = '';
-        const minute15 = '';
-
-        // Array of slides
+        // Slide constants (PNG images for each minute)
         const slides = [
-            minute1,
-            minute2,
-            minute3,
-            minute4,
-            minute5,
-            minute6,
-            minute7,
-            minute8,
-            minute9,
-            minute10,
-            minute11,
-            minute12,
-            minute13,
-            minute14,
-            minute15
+            'xface.png',  // Image for minute 1
+            'efptoz.jpg',  // Image for minute 2
+            'mario.jpg',  // Image for minute 3
+            'jmp.jpg',  // Image for minute 4
+            'perl.png',  // Image for minute 5
+            'ruby.jpg',  // Image for minute 6
+            'dinosaur.png',  // Image for minute 7
+            'minute8.png',  // Image for minute 8
+            'minute9.png',  // Image for minute 9
+            'minute10.png', // Image for minute 10
+            'minute11.png', // Image for minute 11
+            'minute12.png', // Image for minute 12
+            'minute13.png', // Image for minute 13
+            'minute14.png', // Image for minute 14
+            'minute15.png'  // Image for minute 15
         ];
 
         let currentSlideIndex = -1; // Start before minute0
         const backgroundImage = new Image();
+        const overlayText = document.getElementById('overlayText');
 
-        // Initialize with minute0 (dinosaur)
-        backgroundImage.src = minute0;
+        // Initialize with the first image (minute 1)
+        backgroundImage.src = slides[0];
 
         backgroundImage.onload = function() {
             drawClockFace(); // Ensure the image is drawn once loaded
@@ -219,6 +233,55 @@ A<!DOCTYPE html>
             updateTime();
         }
 
+        function createBuzzingSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = 'square'; // Creates a buzzing-like sound
+            oscillator.frequency.setValueAtTime(100, audioContext.currentTime); // Buzz frequency
+            gainNode.gain.setValueAtTime(0.02, audioContext.currentTime); // Adjust volume, quieter now
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.start();
+            setTimeout(() => {
+                oscillator.stop();
+                audioContext.close();
+            }, 500); // Buzz for 0.5 seconds
+        }
+
+        function showStaticNoise(onComplete) {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            createBuzzingSound(); // Play buzzing sound
+
+            let noiseDuration = 500; // Half a second for noise
+
+            function drawNoise() {
+                const imageData = ctx.createImageData(width, height);
+                const buffer32 = new Uint32Array(imageData.data.buffer);
+                const length = buffer32.length;
+                for (let i = 0; i < length; i++) {
+                    if (Math.random() < 0.2) { // Sparser noise (20% of pixels)
+                        buffer32[i] = Math.random() < 0.5 ? 0xffffffff : 0xff000000; // Random noise
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }
+
+            // Draw noise for a short time (500ms)
+            let noiseInterval = setInterval(drawNoise, 50); // Refresh the noise
+            setTimeout(() => {
+                clearInterval(noiseInterval); // Stop the noise
+                onComplete(); // Load the next image
+            }, noiseDuration);
+        }
+
         function startCountdown() {
             if (countdownStarted) return;
             countdownStarted = true;
@@ -238,12 +301,21 @@ A<!DOCTYPE html>
             countdownInterval = setInterval(() => {
                 timeLeft--;
 
-                // Check if it's time to change the slide
+                // Check if it's time to change the slide (at minute intervals)
                 const passedMinutes = Math.floor((countdownTime - timeLeft) / 60);
                 if (passedMinutes >= 0 && passedMinutes < slides.length) {
-                    if (slides[passedMinutes] !== '') {
+                    if (slides[passedMinutes] !== '' && currentSlideIndex !== passedMinutes) {
                         currentSlideIndex = passedMinutes;
-                        backgroundImage.src = slides[currentSlideIndex];
+
+                        // Hide the overlay text after the first image
+                        if (currentSlideIndex === 0) {
+                            overlayText.style.display = 'none';
+                        }
+
+                        showStaticNoise(() => {
+                            // Load the next slide right after the noise, without flicker
+                            backgroundImage.src = slides[currentSlideIndex];
+                        });
                     }
                 }
 
@@ -307,7 +379,7 @@ A<!DOCTYPE html>
             ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
             ctx.fill();
 
-6            // Set opacity to 60%
+            // Set opacity to 60%
             ctx.globalAlpha = 0.6;
 
             // Draw remaining time in dark red or light coral with 50% opacity

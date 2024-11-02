@@ -1,8 +1,8 @@
-h<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Interactive Clock with Countdown and Static Noise</title>
+    <title>𝙰 𝚁𝙴𝚃𝙸𝚁𝙴𝙳 𝙿𝚁𝙾𝙶𝚁𝙰𝙼𝙼𝙴𝚁</title>
     <style>
         body {
             display: flex;
@@ -84,7 +84,7 @@ h<!DOCTYPE html>
             justify-content: space-between;
             align-items: center;
             pointer-events: none;
-            font-family: "Courier New", Courier, monospace; /* Monotype font */
+            font-family: "Courier New", Courier, monospace; /* Monospace font */
         }
 
         #topText {
@@ -132,7 +132,7 @@ h<!DOCTYPE html>
         let startAngle;
         let endAngleFull;
 
-        // Slide constants (PNG images for each minute)
+        // Slides array
         const slides = [
             'xface.webp',
             'bejzik.webp',
@@ -141,21 +141,27 @@ h<!DOCTYPE html>
             'ada.webp',
             'efptoz.webp',
             'mario.webp',
-            'ruby.webp',
-            'art.webp',
+            // 'ruby.webp',
+            // 'art.webp',
             'literate.webp',
             'euler.webp',
             'swipe.webp',
             'speak.webp',
-            'password.webp',  
+            'password.webp',
+            'dinosaur.webp',
+            'dinosaur.webp',
+            'dinosaur.webp',
             'dinosaur.webp'
         ];
-        
-        let currentSlideIndex = -1; // Start before minute0
+
+        // Calculate slide duration
+        const slideDuration = countdownTime / slides.length;
+
+        let currentSlideIndex = -1; // Start before the first slide
         const backgroundImage = new Image();
         const overlayText = document.getElementById('overlayText');
 
-        // Initialize with the first image (minute 1)
+        // Initialize with the first image
         backgroundImage.src = slides[0];
 
         backgroundImage.onload = function() {
@@ -165,6 +171,36 @@ h<!DOCTYPE html>
         backgroundImage.onerror = function() {
             console.error('Failed to load the background image.');
         };
+
+        // Move drawClockFace function to global scope
+        function drawClockFace() {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Clip the clock face to a circle
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                0,
+                2 * Math.PI
+            );
+            ctx.closePath();
+            ctx.clip();
+
+            // Draw the background image with 70% opacity
+            ctx.globalAlpha = 0.7;
+            if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
+                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            }
+            ctx.globalAlpha = 1; // Reset opacity
+
+            ctx.restore();
+        }
 
         function startClock() {
             const hourHand = document.getElementById('hour');
@@ -181,32 +217,6 @@ h<!DOCTYPE html>
                 if (!countdownStarted) {
                     drawClockFace();
                 }
-            }
-
-            function drawClockFace() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Clip the clock face to a circle
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(
-                    canvas.width / 2,
-                    canvas.height / 2,
-                    canvas.width / 2,
-                    0,
-                    2 * Math.PI
-                );
-                ctx.closePath();
-                ctx.clip();
-
-                // Draw the background image with 50% opacity
-                ctx.globalAlpha = 0.7;
-                if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
-                    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
-                }
-                ctx.globalAlpha = 1; // Reset opacity
-
-                ctx.restore();
             }
 
             function updateTime() {
@@ -242,7 +252,7 @@ h<!DOCTYPE html>
 
             oscillator.type = 'square'; // Creates a buzzing-like sound
             oscillator.frequency.setValueAtTime(100, audioContext.currentTime); // Buzz frequency
-            gainNode.gain.setValueAtTime(0.02, audioContext.currentTime); // Adjust volume, quieter now
+            gainNode.gain.setValueAtTime(0.02, audioContext.currentTime); // Adjust volume
 
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
@@ -303,11 +313,12 @@ h<!DOCTYPE html>
             countdownInterval = setInterval(() => {
                 timeLeft--;
 
-                // Check if it's time to change the slide (at minute intervals)
-                const passedMinutes = Math.floor((countdownTime - timeLeft) / 60);
-                if (passedMinutes >= 0 && passedMinutes < slides.length) {
-                    if (slides[passedMinutes] !== '' && currentSlideIndex !== passedMinutes) {
-                        currentSlideIndex = passedMinutes;
+                const elapsedTime = countdownTime - timeLeft;
+                const slideIndex = Math.floor(elapsedTime / slideDuration);
+
+                if (slideIndex >= 0 && slideIndex < slides.length) {
+                    if (slides[slideIndex] !== '' && currentSlideIndex !== slideIndex) {
+                        currentSlideIndex = slideIndex;
 
                         // Hide the overlay text after the first image
                         if (currentSlideIndex === 0) {
@@ -342,8 +353,6 @@ h<!DOCTYPE html>
             const angleElapsed = elapsedFraction * (90 * Math.PI / 180);
             const currentAngle = startAngle + angleElapsed;
 
-            const firstTenMinutesAngle = startAngle + (600 / totalTime) * (90 * Math.PI / 180);
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Clip the clock face to a circle
@@ -359,14 +368,14 @@ h<!DOCTYPE html>
             ctx.closePath();
             ctx.clip();
 
-            // Draw the background image with 50% opacity
+            // Draw the background image with 90% opacity
             ctx.globalAlpha = 0.9;
             if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
                 ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
             }
             ctx.globalAlpha = 1; // Reset opacity
 
-            // Draw elapsed time in light gray
+            // Draw elapsed time in dark overlay
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, canvas.height / 2);
             ctx.arc(
@@ -381,40 +390,21 @@ h<!DOCTYPE html>
             ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
             ctx.fill();
 
-            // Set opacity to 60%
+            // Draw remaining time
             ctx.globalAlpha = 0.6;
-
-            // Draw remaining time in dark red or light coral with 50% opacity
-            if (timeLeft > 300) { // More than 5 minutes left
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, canvas.height / 2);
-                ctx.arc(
-                    canvas.width / 2,
-                    canvas.height / 2,
-                    canvas.width / 2,
-                    currentAngle,
-                    endAngleFull,
-                    false
-                );
-                ctx.closePath();
-                ctx.fillStyle = 'darkred';
-                ctx.fill();
-            } else { // Last 5 minutes
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, canvas.height / 2);
-                ctx.arc(
-                    canvas.width / 2,
-                    canvas.height / 2,
-                    canvas.width / 2,
-                    currentAngle,
-                    endAngleFull,
-                    false
-                );
-                ctx.closePath();
-                ctx.fillStyle = 'lightcoral';
-                ctx.fill();
-            }
-
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                currentAngle,
+                endAngleFull,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = timeLeft > 300 ? 'darkred' : 'lightcoral';
+            ctx.fill();
             ctx.globalAlpha = 1; // Reset opacity
 
             ctx.restore();

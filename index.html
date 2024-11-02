@@ -1,7 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
+    <meta http-equiv="Content-Language" content="en">
+    <link rel="icon" href="favicon32.ico" type="image/x-icon">
     <title>𝙰 𝚁𝙴𝚃𝙸𝚁𝙴𝙳 𝙿𝚁𝙾𝙶𝚁𝙰𝙼𝙼𝙴𝚁</title>
     <style>
         body {
@@ -125,8 +124,8 @@
         let countdownInterval;
         let countdownStarted = false;
         const eventsConfig = {
-            event1: { time: 600, message: '10 minutes left' },
-            event2: { time: 300, message: '5 minutes left' },
+            event1: { time: 600, message: '𝟷𝟶 𝚖𝚒𝚗𝚞𝚝𝚎𝚜 𝚕𝚎𝚏𝚝.' },
+            event2: { time: 300, message: '𝟻 𝚖𝚒𝚗𝚞𝚝𝚎𝚜 𝚕𝚎𝚏𝚝.' },
         };
 
         let startAngle;
@@ -153,6 +152,7 @@
             'dinosaur.webp',
             'dinosaur.webp',
             'dinosaur.webp',
+            // 'glider.gifv',
             'dinosaur.webp'
         ];
 
@@ -360,7 +360,7 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
-                    messageElement.innerHTML = 'Time is up!';
+                    messageElement.innerHTML = '𝚃𝚒𝚖𝚎 𝚒𝚜 𝚞𝚙!';
                     messageElement.style.display = 'block';
                 }
             }, 1000);

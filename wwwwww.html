@@ -120,7 +120,7 @@
 
     <script>
         // Total countdown time in seconds (15 minutes)
-        const countdownTime = 900;
+        const countdownTime = 900; // 15 minutes in seconds
 
         let countdownInterval;
         let countdownStarted = false;
@@ -151,11 +151,12 @@
             'dinosaur.webp',
             'dinosaur.webp',
             'dinosaur.webp',
+            'dinosaur.webp',
+            'dinosaur.webp',
             'dinosaur.webp'
         ];
 
-        // Calculate slide duration
-        const slideDuration = countdownTime / slides.length;
+        const slideDuration = countdownTime / slides.length; // Duration for each slide in seconds
 
         let currentSlideIndex = -1; // Start before the first slide
         const backgroundImage = new Image();
@@ -172,7 +173,6 @@
             console.error('Failed to load the background image.');
         };
 
-        // Move drawClockFace function to global scope
         function drawClockFace() {
             const canvas = document.getElementById('clockCanvas');
             const ctx = canvas.getContext('2d');
@@ -197,6 +197,29 @@
             if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
                 ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
             }
+            ctx.globalAlpha = 1; // Reset opacity
+
+            // Calculate angles
+            const totalAngle = 90 * Math.PI / 180; // 90 degrees in radians
+            const lastFiveMinutesTime = 300; // 5 minutes in seconds
+            const lastFiveMinutesAngle = (lastFiveMinutesTime / countdownTime) * totalAngle;
+            const lastFiveMinutesStartAngle = endAngleFull - lastFiveMinutesAngle;
+
+            // Draw the last five minutes segment in light coral with transparency
+            ctx.globalAlpha = 0.4; // Set desired transparency (0.0 to 1.0)
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                lastFiveMinutesStartAngle,
+                endAngleFull,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = 'lightcoral';
+            ctx.fill();
             ctx.globalAlpha = 1; // Reset opacity
 
             ctx.restore();
@@ -375,6 +398,29 @@
             }
             ctx.globalAlpha = 1; // Reset opacity
 
+            // Calculate angles
+            const totalAngle = 90 * Math.PI / 180; // 90 degrees in radians
+            const lastFiveMinutesTime = 300; // 5 minutes in seconds
+            const lastFiveMinutesAngle = (lastFiveMinutesTime / totalTime) * totalAngle;
+            const lastFiveMinutesStartAngle = endAngleFull - lastFiveMinutesAngle;
+
+            // Draw the last five minutes segment in light coral with transparency
+            ctx.globalAlpha = 0.4; // Set desired transparency
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                canvas.width / 2,
+                lastFiveMinutesStartAngle,
+                endAngleFull,
+                false
+            );
+            ctx.closePath();
+            ctx.fillStyle = 'lightcoral';
+            ctx.fill();
+            ctx.globalAlpha = 1; // Reset opacity
+
             // Draw elapsed time in dark overlay
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, canvas.height / 2);
@@ -390,22 +436,24 @@
             ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
             ctx.fill();
 
-            // Draw remaining time
-            ctx.globalAlpha = 0.6;
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, canvas.height / 2);
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2,
-                currentAngle,
-                endAngleFull,
-                false
-            );
-            ctx.closePath();
-            ctx.fillStyle = timeLeft > 300 ? 'darkred' : 'lightcoral';
-            ctx.fill();
-            ctx.globalAlpha = 1; // Reset opacity
+            // Draw remaining time (excluding last five minutes) in dark red
+            if (timeLeft > lastFiveMinutesTime) {
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height / 2);
+                ctx.arc(
+                    canvas.width / 2,
+                    canvas.height / 2,
+                    canvas.width / 2,
+                    currentAngle,
+                    lastFiveMinutesStartAngle,
+                    false
+                );
+                ctx.closePath();
+                ctx.fillStyle = 'darkred';
+                ctx.fill();
+                ctx.globalAlpha = 1; // Reset opacity
+            }
 
             ctx.restore();
         }

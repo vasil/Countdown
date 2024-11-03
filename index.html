@@ -148,12 +148,12 @@
             'speak.webp',
             'password.webp',
             'dinosaur.webp',
-            'dinosaur.webp',
-            'dinosaur.webp',
+            //'dinosaur.webp',
+            //'dinosaur.webp',
             'dinosaur.webp',
             'antro.webp',
             // 'glider.gifv',
-            'dinosaur.webp'
+            //'dinosaur.webp'
         ];
 
         const slideDuration = countdownTime / slides.length; // Duration for each slide in seconds
@@ -347,11 +347,13 @@
                         if (currentSlideIndex === 0) {
                             overlayText.style.display = 'none';
                         }
-
-                        showStaticNoise(() => {
+                        else {
+                            showStaticNoise(() => {
                             // Load the next slide right after the noise, without flicker
                             backgroundImage.src = slides[currentSlideIndex];
-                        });
+                            });
+                        }
+                        
                     }
                 }
 

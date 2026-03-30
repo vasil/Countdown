@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
     <meta name="google" content="notranslate">
     <meta http-equiv="Content-Language" content="en">
     <link rel="icon" href="favicon32.ico" type="image/x-icon">
-    <title>𝙰 𝚁𝙴𝚃𝙸𝚁𝙴𝙳 𝙿𝚁𝙾𝙶𝚁𝙰𝙼𝙼𝙴𝚁</title>
+    <title>Countdown Presentation</title>
     <style>
         body {
             display: flex;
@@ -25,7 +26,6 @@
             border-radius: 50%;
             overflow: hidden;
             background-color: white;
-            fill-opacity: 50%;
         }
 
         .hand {
@@ -34,6 +34,7 @@
             left: 50%;
             transform-origin: bottom center;
             transform: rotate(0deg);
+            z-index: 10;
         }
 
         .hour-hand {
@@ -55,7 +56,6 @@
         .second-hand {
             width: 4px;
             height: 45%;
-            background-color: red;
             border-radius: 2px;
             margin-left: -2px;
         }
@@ -69,12 +69,16 @@
             text-align: center;
             color: white;
             display: none;
+            font-family: "Courier New", Courier, monospace;
+            z-index: 20;
+            text-shadow: 1px 1px 3px black;
         }
 
         #clockCanvas {
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 1;
         }
 
         #overlayText {
@@ -87,7 +91,8 @@
             justify-content: space-between;
             align-items: center;
             pointer-events: none;
-            font-family: "Courier New", Courier, monospace; /* Monospace font */
+            font-family: "Courier New", Courier, monospace;
+            z-index: 5;
         }
 
         #topText {
@@ -95,6 +100,8 @@
             font-weight: 800;
             color: black;
             margin-top: 11%;
+            white-space: pre-line;
+            text-align: center;
         }
 
         #bottomText {
@@ -102,6 +109,8 @@
             font-weight: bold;
             color: black;
             margin-bottom: 15%;
+            white-space: pre-line;
+            text-align: center;
         }
     </style>
 </head>
@@ -112,381 +121,325 @@
         <div id="hour" class="hand hour-hand"></div>
         <div id="minute" class="hand minute-hand"></div>
         <div id="second" class="hand second-hand"></div>
-
-        <!-- Overlay text for the first image -->
         <div id="overlayText">
-            <div id="topText">𝙰<br/>𝚁𝙴𝚃𝙸𝚁𝙴𝙳<br/>𝙿𝚁𝙾𝙶𝚁𝙰𝙼𝙼𝙴𝚁</div>
-            <div id="bottomText">𝚅𝚊𝚜𝚒𝚕<br/>𝚃𝚊𝚗𝚎𝚜𝚔𝚒</div>
+            <div id="topText"></div>
+            <div id="bottomText"></div>
         </div>
     </div>
 
     <script>
-        // Total countdown time in seconds (15 minutes)
-        const countdownTime = 900; // 15 minutes in seconds
-
-        let countdownInterval;
+        let config = null;
+        let slides = [];
+        let preloadedImages = [];
+        let currentSlideIndex = -1;
         let countdownStarted = false;
-        const eventsConfig = {
-            event1: { time: 600, message: '𝟷𝟶 𝚖𝚒𝚗𝚞𝚝𝚎𝚜 𝚕𝚎𝚏𝚝.' },
-            event2: { time: 300, message: '𝟻 𝚖𝚒𝚗𝚞𝚝𝚎𝚜 𝚕𝚎𝚏𝚝.' },
-        };
+        let countdownInterval = null;
+        let startAngle = 0;
+        let endAngleFull = 0;
+        let numberBuffer = '';
+        let numberBufferTimer = null;
 
-        let startAngle;
-        let endAngleFull;
+        function getPresentationName() {
+            const path = window.location.pathname;
+            const parts = path.replace(/\/$/, '').split('/');
+            const last = parts[parts.length - 1];
+            if (!last || last === 'index.html' || last === 'countdown') {
+                return 'arp';
+            }
+            return last;
+        }
 
-        // Slides array
-        const slides = [
-            'xface.webp',
-            'bejzik.webp',
-            'pascal.webp',
-            'jmp.webp',
-            'ada.webp',
-            'efptoz.webp',
-            'mario.webp',
-            // 'ruby.webp',
-            // 'art.webp',
-            'literate.webp',
-            'euler.webp',
-            'swipe.webp',
-            'speak.webp',
-            'password.webp',
-            'dinosaur.webp',
-            //'dinosaur.webp',
-            //'dinosaur.webp',
-            'dinosaur.webp',
-            'antro.webp',
-            // 'glider.gifv',
-            //'dinosaur.webp'
-        ];
+        async function loadConfig(name) {
+            try {
+                const response = await fetch(name + '.json');
+                if (!response.ok) throw new Error('Not found');
+                return await response.json();
+            } catch (e) {
+                return null;
+            }
+        }
 
-        const slideDuration = countdownTime / slides.length; // Duration for each slide in seconds
+        function show404(name) {
+            document.title = '404 - Presentation Not Found';
+            const xface = new Image();
+            xface.src = 'xface.webp';
+            xface.onload = () => {
+                const canvas = document.getElementById('clockCanvas');
+                const ctx = canvas.getContext('2d');
+                resizeCanvas();
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.clip();
+                ctx.globalAlpha = 0.7;
+                ctx.drawImage(xface, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            };
+            document.getElementById('topText').textContent = '404';
+            document.getElementById('bottomText').textContent = 'Presentation\nnot found';
+            document.getElementById('hour').style.display = 'none';
+            document.getElementById('minute').style.display = 'none';
+            document.getElementById('second').style.display = 'none';
+        }
 
-        let currentSlideIndex = -1; // Start before the first slide
-        const backgroundImage = new Image();
-        const overlayText = document.getElementById('overlayText');
+        function preloadImages() {
+            preloadedImages = [];
+            slides.forEach((slide, index) => {
+                const img = new Image();
+                img.src = slide.image;
+                preloadedImages[index] = img;
+            });
+        }
 
-        // Initialize with the first image
-        backgroundImage.src = slides[0];
+        function resizeCanvas() {
+            const clockEl = document.getElementById('clock');
+            const canvas = document.getElementById('clockCanvas');
+            const rect = clockEl.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
 
-        backgroundImage.onload = function() {
-            drawClockFace(); // Ensure the image is drawn once loaded
-        };
+        function updateClockHands() {
+            const now = new Date();
+            const seconds = now.getSeconds();
+            const minutes = now.getMinutes();
+            const hours = now.getHours() % 12;
+            const secondDeg = (seconds / 60) * 360;
+            const minuteDeg = (minutes / 60) * 360 + (seconds / 60) * 6;
+            const hourDeg = (hours / 12) * 360 + (minutes / 60) * 30;
+            document.getElementById('second').style.transform = `rotate(${secondDeg}deg)`;
+            document.getElementById('minute').style.transform = `rotate(${minuteDeg}deg)`;
+            document.getElementById('hour').style.transform = `rotate(${hourDeg}deg)`;
+        }
 
-        backgroundImage.onerror = function() {
-            console.error('Failed to load the background image.');
-        };
-
-        function drawClockFace() {
+        function drawIntroFace() {
             const canvas = document.getElementById('clockCanvas');
             const ctx = canvas.getContext('2d');
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Clip the clock face to a circle
             ctx.save();
             ctx.beginPath();
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2,
-                0,
-                2 * Math.PI
-            );
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.clip();
-
-            // Draw the background image with 70% opacity
-            ctx.globalAlpha = 0.7;
-            if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
-                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = config.effects.introImageOpacity || 0.7;
+            if (preloadedImages[0] && preloadedImages[0].complete) {
+                ctx.drawImage(preloadedImages[0], 0, 0, canvas.width, canvas.height);
             }
-            ctx.globalAlpha = 1; // Reset opacity
-
-            // Calculate angles
-            const totalAngle = 90 * Math.PI / 180; // 90 degrees in radians
-            const lastFiveMinutesTime = 300; // 5 minutes in seconds
-            const lastFiveMinutesAngle = (lastFiveMinutesTime / countdownTime) * totalAngle;
-            const lastFiveMinutesStartAngle = endAngleFull - lastFiveMinutesAngle;
-
-            // Draw the last five minutes segment in light coral with transparency
-            ctx.globalAlpha = 0.4; // Set desired transparency (0.0 to 1.0)
-            ctx.beginPath();
-            ctx.moveTo(canvas.width / 2, canvas.height / 2);
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2,
-                lastFiveMinutesStartAngle,
-                endAngleFull,
-                false
-            );
-            ctx.closePath();
-            ctx.fillStyle = 'lightcoral';
-            ctx.fill();
-            ctx.globalAlpha = 1; // Reset opacity
-
+            ctx.globalAlpha = 1;
             ctx.restore();
-        }
-
-        function startClock() {
-            const hourHand = document.getElementById('hour');
-            const minuteHand = document.getElementById('minute');
-            const secondHand = document.getElementById('second');
-            const canvas = document.getElementById('clockCanvas');
-            const ctx = canvas.getContext('2d');
-            const clockElement = document.getElementById('clock');
-
-            function setCanvasSize() {
-                const rect = clockElement.getBoundingClientRect();
-                canvas.width = rect.width;
-                canvas.height = rect.height;
-                if (!countdownStarted) {
-                    drawClockFace();
-                }
-            }
-
-            function updateTime() {
-                const now = new Date();
-                const seconds = now.getSeconds();
-                const minutes = now.getMinutes();
-                const hours = now.getHours() % 12;
-
-                const secondDeg = ((seconds / 60) * 360);
-                const minuteDeg = ((minutes / 60) * 360) + ((seconds / 60) * 6);
-                const hourDeg = ((hours / 12) * 360) + ((minutes / 60) * 30);
-
-                secondHand.style.transform = `rotate(${secondDeg}deg)`;
-                minuteHand.style.transform = `rotate(${minuteDeg}deg)`;
-                hourHand.style.transform = `rotate(${hourDeg}deg)`;
-
-                if (!countdownStarted) {
-                    drawClockFace();
-                }
-            }
-
-            setCanvasSize();
-            window.addEventListener('resize', setCanvasSize);
-
-            setInterval(updateTime, 1000);
-            updateTime();
-        }
-
-        function createBuzzingSound() {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-
-            oscillator.type = 'square'; // Creates a buzzing-like sound
-            oscillator.frequency.setValueAtTime(100, audioContext.currentTime); // Buzz frequency
-            gainNode.gain.setValueAtTime(0.02, audioContext.currentTime); // Adjust volume
-
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            oscillator.start();
-            setTimeout(() => {
-                oscillator.stop();
-                audioContext.close();
-            }, 500); // Buzz for 0.5 seconds
-        }
-
-        function showStaticNoise(onComplete) {
-            const canvas = document.getElementById('clockCanvas');
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-
-            createBuzzingSound(); // Play buzzing sound
-
-            let noiseDuration = 500; // Half a second for noise
-
-            function drawNoise() {
-                const imageData = ctx.createImageData(width, height);
-                const buffer32 = new Uint32Array(imageData.data.buffer);
-                const length = buffer32.length;
-                for (let i = 0; i < length; i++) {
-                    if (Math.random() < 0.2) { // Sparser noise (20% of pixels)
-                        buffer32[i] = Math.random() < 0.5 ? 0xffffffff : 0xff000000; // Random noise
-                    }
-                }
-                ctx.putImageData(imageData, 0, 0);
-            }
-
-            // Draw noise for a short time (500ms)
-            let noiseInterval = setInterval(drawNoise, 50); // Refresh the noise
-            setTimeout(() => {
-                clearInterval(noiseInterval); // Stop the noise
-                onComplete(); // Load the next image
-            }, noiseDuration);
-        }
-
-        function startCountdown() {
-            if (countdownStarted) return;
-            countdownStarted = true;
-
-            const now = new Date();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-            const minuteAngle = ((minutes / 60) * 360) + ((seconds / 60) * 6);
-            startAngle = ((minuteAngle - 90) * Math.PI) / 180;
-            endAngleFull = startAngle + (90 * Math.PI / 180);
-
-            let timeLeft = countdownTime;
-            const messageElement = document.getElementById('message');
-
-            updateClockFace(timeLeft);
-
-            countdownInterval = setInterval(() => {
-                timeLeft--;
-
-                const elapsedTime = countdownTime - timeLeft;
-                const slideIndex = Math.floor(elapsedTime / slideDuration);
-
-                if (slideIndex >= 0 && slideIndex < slides.length) {
-                    if (slides[slideIndex] !== '' && currentSlideIndex !== slideIndex) {
-                        currentSlideIndex = slideIndex;
-
-                        // Hide the overlay text after the first image
-                        if (currentSlideIndex === 0) {
-                            overlayText.style.display = 'none';
-                        }
-                        else {
-                            showStaticNoise(() => {
-                            // Load the next slide right after the noise, without flicker
-                            backgroundImage.src = slides[currentSlideIndex];
-                            });
-                        }
-                        
-                    }
-                }
-
-                updateClockFace(timeLeft);
-                checkEventTriggers(timeLeft, messageElement);
-
-                if (timeLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    messageElement.innerHTML = '𝚃𝚒𝚖𝚎 𝚒𝚜 𝚞𝚙!';
-                    messageElement.style.display = 'block';
-                }
-            }, 1000);
         }
 
         function updateClockFace(timeLeft) {
             const canvas = document.getElementById('clockCanvas');
             const ctx = canvas.getContext('2d');
-            const totalTime = countdownTime;
-
+            const totalTime = config.duration;
             const elapsedTime = totalTime - timeLeft;
             const elapsedFraction = elapsedTime / totalTime;
-            const angleElapsed = elapsedFraction * (90 * Math.PI / 180);
+            const totalAngleRad = (config.clockSettings.totalAngleDegrees * Math.PI) / 180;
+            const angleElapsed = elapsedFraction * totalAngleRad;
             const currentAngle = startAngle + angleElapsed;
+            const lastWarnSecs = config.clockSettings.lastWarningMinutes * 60;
+            const lastWarnAngle = (lastWarnSecs / totalTime) * totalAngleRad;
+            const lastWarnStartAngle = endAngleFull - lastWarnAngle;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Clip the clock face to a circle
             ctx.save();
             ctx.beginPath();
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2,
-                0,
-                2 * Math.PI
-            );
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.clip();
 
-            // Draw the background image with 90% opacity
-            ctx.globalAlpha = 0.9;
-            if (backgroundImage.complete && backgroundImage.naturalWidth !== 0) {
-                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = config.effects.slideImageOpacity || 0.9;
+            const img = preloadedImages[currentSlideIndex];
+            if (img && img.complete && img.naturalWidth !== 0) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             }
-            ctx.globalAlpha = 1; // Reset opacity
+            ctx.globalAlpha = 1;
 
-            // Calculate angles
-            const totalAngle = 90 * Math.PI / 180; // 90 degrees in radians
-            const lastFiveMinutesTime = 300; // 5 minutes in seconds
-            const lastFiveMinutesAngle = (lastFiveMinutesTime / totalTime) * totalAngle;
-            const lastFiveMinutesStartAngle = endAngleFull - lastFiveMinutesAngle;
-
-            // Draw the last five minutes segment in light coral with transparency
-            ctx.globalAlpha = 0.4; // Set desired transparency
+            ctx.globalAlpha = config.effects.warningZoneOpacity || 0.4;
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, canvas.height / 2);
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2,
-                lastFiveMinutesStartAngle,
-                endAngleFull,
-                false
-            );
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, lastWarnStartAngle, endAngleFull, false);
             ctx.closePath();
-            ctx.fillStyle = 'lightcoral';
+            ctx.fillStyle = config.colors.warningZone || 'lightcoral';
             ctx.fill();
-            ctx.globalAlpha = 1; // Reset opacity
+            ctx.globalAlpha = 1;
 
-            // Draw elapsed time in dark overlay
             ctx.beginPath();
             ctx.moveTo(canvas.width / 2, canvas.height / 2);
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                canvas.width / 2,
-                startAngle,
-                currentAngle,
-                false
-            );
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, startAngle, currentAngle, false);
             ctx.closePath();
-            ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+            ctx.fillStyle = config.colors.elapsed || 'rgba(0,0,0,0.8)';
             ctx.fill();
 
-            // Draw remaining time (excluding last five minutes) in dark red
-            if (timeLeft > lastFiveMinutesTime) {
+            if (timeLeft > lastWarnSecs) {
                 ctx.globalAlpha = 0.6;
                 ctx.beginPath();
                 ctx.moveTo(canvas.width / 2, canvas.height / 2);
-                ctx.arc(
-                    canvas.width / 2,
-                    canvas.height / 2,
-                    canvas.width / 2,
-                    currentAngle,
-                    lastFiveMinutesStartAngle,
-                    false
-                );
+                ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, currentAngle, lastWarnStartAngle, false);
                 ctx.closePath();
-                ctx.fillStyle = 'darkred';
+                ctx.fillStyle = config.colors.remainingTime || 'darkred';
                 ctx.fill();
-                ctx.globalAlpha = 1; // Reset opacity
+                ctx.globalAlpha = 1;
             }
 
             ctx.restore();
         }
 
-        function checkEventTriggers(timeLeft, messageElement) {
-            Object.keys(eventsConfig).forEach(key => {
-                if (timeLeft === eventsConfig[key].time) {
-                    messageElement.innerHTML = eventsConfig[key].message;
-                    messageElement.style.display = 'block';
+        function playBuzz() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(config.effects.buzzFrequency || 100, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                setTimeout(() => { osc.stop(); audioCtx.close(); }, config.effects.buzzDuration || 500);
+            } catch (e) {}
+        }
 
-                    setTimeout(() => {
-                        messageElement.style.display = 'none';
-                    }, 5000);
+        function showStaticNoise(onComplete) {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            playBuzz();
+            const duration = config.effects.noiseTransitionDuration || 500;
+            const interval = setInterval(() => {
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const buf = new Uint32Array(imageData.data.buffer);
+                for (let i = 0; i < buf.length; i++) {
+                    if (Math.random() < 0.2) {
+                        buf[i] = Math.random() < 0.5 ? 0xffffffff : 0xff000000;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }, 50);
+            setTimeout(() => {
+                clearInterval(interval);
+                onComplete();
+            }, duration);
+        }
+
+        function goToSlide(index) {
+            if (index < 0) index = 0;
+            if (index >= slides.length) index = slides.length - 1;
+            currentSlideIndex = index;
+        }
+
+        function checkEvents(timeLeft) {
+            const msgEl = document.getElementById('message');
+            config.events.forEach(ev => {
+                if (timeLeft === ev.time) {
+                    msgEl.innerHTML = ev.message;
+                    msgEl.style.display = 'block';
+                    setTimeout(() => { msgEl.style.display = 'none'; }, 5000);
                 }
             });
         }
 
-        function initiateCountdown(e) {
-            if (e.type === 'click' || (e.type === 'keydown' && e.code === 'Space')) {
-                e.preventDefault();
-                startCountdown();
+        function startCountdown() {
+            if (countdownStarted) return;
+            countdownStarted = true;
+            document.getElementById('overlayText').style.display = 'none';
+
+            const now = new Date();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
+            startAngle = ((minuteAngle - 90) * Math.PI) / 180;
+            endAngleFull = startAngle + (config.clockSettings.totalAngleDegrees * Math.PI) / 180;
+
+            let timeLeft = config.duration;
+            const slideDuration = config.duration / slides.length;
+            currentSlideIndex = 0;
+            updateClockFace(timeLeft);
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                const elapsed = config.duration - timeLeft;
+                const newSlideIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
+
+                if (newSlideIndex !== currentSlideIndex) {
+                    const nextIndex = newSlideIndex;
+                    showStaticNoise(() => {
+                        currentSlideIndex = nextIndex;
+                        updateClockFace(timeLeft);
+                    });
+                } else {
+                    updateClockFace(timeLeft);
+                }
+
+                checkEvents(timeLeft);
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    const msgEl = document.getElementById('message');
+                    msgEl.innerHTML = 'Time is up!';
+                    msgEl.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function handleKeydown(e) {
+            if (!countdownStarted) {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    startCountdown();
+                }
+                return;
+            }
+            if (e.code === 'ArrowRight') { goToSlide(currentSlideIndex + 1); return; }
+            if (e.code === 'ArrowLeft') { goToSlide(currentSlideIndex - 1); return; }
+            const digit = e.key;
+            if (digit >= '0' && digit <= '9') {
+                numberBuffer += digit;
+                clearTimeout(numberBufferTimer);
+                numberBufferTimer = setTimeout(() => {
+                    const target = parseInt(numberBuffer, 10) - 1;
+                    numberBuffer = '';
+                    if (!isNaN(target)) goToSlide(target);
+                }, 600);
             }
         }
 
-        document.body.addEventListener('click', initiateCountdown);
-        document.body.addEventListener('keydown', initiateCountdown);
+        async function init() {
+            resizeCanvas();
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                if (!countdownStarted) drawIntroFace();
+            });
 
-        startClock();
+            const name = getPresentationName();
+            config = await loadConfig(name);
+
+            if (!config) {
+                show404(name);
+                return;
+            }
+
+            document.title = config.title + ' — ' + config.author;
+            slides = config.slides;
+            document.getElementById('second').style.backgroundColor = config.colors.secondHand || 'red';
+            document.getElementById('topText').textContent = config.introText.top;
+            document.getElementById('bottomText').textContent = config.introText.bottom;
+
+            preloadImages();
+            setTimeout(drawIntroFace, 300);
+
+            setInterval(() => {
+                updateClockHands();
+                if (!countdownStarted) drawIntroFace();
+            }, 1000);
+            updateClockHands();
+
+            document.addEventListener('keydown', handleKeydown);
+            document.body.addEventListener('click', handleKeydown.bind(null, { code: 'Space', preventDefault: () => {} }));
+        }
+
+        init();
     </script>
 </body>
 </html>

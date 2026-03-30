@@ -7,8 +7,12 @@
 </head>
 <body>
     <script>
-        const name = 'someFile';
-        const response = await fetch('/Countdown/' + name + '.json');
+        // Your JavaScript code
+        async function fetchData(name) {
+            const response = await fetch('./' + name + '.json');
+            const data = await response.json();
+            console.log(data);
+        }
     </script>
 </body>
 </html>

@@ -1,10 +1,10 @@
 ```json
 {
-  "title": "Adaptive Athlete",
+  "title": "An Adaptive Athlete",
   "author": "Vasil Taneski",
   "duration": 900,
   "introText": {
-    "top": "ADAPTIVE\nATHLETE",
+    "top": "AN\nADAPTIVE\nATHLETE",
     "bottom": "Vasil\nTaneski"
   },
   "colors": {

@@ -139,6 +139,11 @@
         let numberBufferTimer = null;
 
         function getPresentationName() {
+            const redirectPath = sessionStorage.getItem('redirectPath');
+            if (redirectPath) {
+                sessionStorage.removeItem('redirectPath');
+                history.replaceState(null, '', redirectPath);
+            }
             const path = window.location.pathname;
             const parts = path.replace(/\/$/, '').split('/');
             const last = parts[parts.length - 1];

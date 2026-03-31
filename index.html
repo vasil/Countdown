@@ -139,13 +139,8 @@
         let numberBufferTimer = null;
 
         function getPresentationName() {
-            const path = window.location.pathname;
-            const parts = path.replace(/\/$/, '').split('/');
-            const last = parts[parts.length - 1];
-            if (!last || last === 'index.html' || last.toLowerCase() === 'countdown') {
-                return 'arp';
-            }
-            return last;
+            const params = new URLSearchParams(window.location.search);
+            return params.get('p') || 'arp';
         }
 
         async function loadConfig(name) {

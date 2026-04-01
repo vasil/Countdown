@@ -400,25 +400,6 @@
             if (!countdownStarted) startCountdown();
         }
 
-        function initVoiceCommands() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return;
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-            recognition.onresult = (e) => {
-                const transcript = e.results[e.results.length - 1][0].transcript.trim().toLowerCase();
-                if (transcript.includes('start')) startCountdown();
-                else if (transcript.includes('next')) goToSlide(currentSlideIndex + 1);
-                else if (transcript.includes('previous')) goToSlide(currentSlideIndex - 1);
-                else if (transcript.includes('pause')) { clearInterval(countdownInterval); countdownInterval = null; }
-            };
-            recognition.onerror = () => {};
-            recognition.onend = () => { recognition.start(); };
-            recognition.start();
-        }
-
         function initSwipeGestures() {
             const clockEl = document.getElementById('clock');
             let touchStartX = 0;
@@ -466,7 +447,6 @@
 
             document.addEventListener('keydown', handleKeydown);
             document.body.addEventListener('click', handleClick);
-            initVoiceCommands();
             initSwipeGestures();
         }
 

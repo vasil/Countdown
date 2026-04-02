@@ -135,6 +135,7 @@
         let countdownInterval = null;
         let startAngle = 0;
         let endAngleFull = 0;
+        let timeLeft = 0;
         let numberBuffer = '';
         let numberBufferTimer = null;
 
@@ -224,11 +225,11 @@
             ctx.restore();
         }
 
-        function updateClockFace(timeLeft) {
+        function updateClockFace(t) {
             const canvas = document.getElementById('clockCanvas');
             const ctx = canvas.getContext('2d');
             const totalTime = config.duration;
-            const elapsedTime = totalTime - timeLeft;
+            const elapsedTime = totalTime - t;
             const elapsedFraction = elapsedTime / totalTime;
             const totalAngleRad = (config.clockSettings.totalAngleDegrees * Math.PI) / 180;
             const angleElapsed = elapsedFraction * totalAngleRad;
@@ -267,7 +268,7 @@
             ctx.fillStyle = config.colors.elapsed || 'rgba(0,0,0,0.8)';
             ctx.fill();
 
-            if (timeLeft > lastWarnSecs) {
+            if (t > lastWarnSecs) {
                 ctx.globalAlpha = 0.6;
                 ctx.beginPath();
                 ctx.moveTo(canvas.width / 2, canvas.height / 2);
@@ -315,15 +316,21 @@
         }
 
         function goToSlide(index) {
+            if (!countdownStarted) return;
             if (index < 0) index = 0;
             if (index >= slides.length) index = slides.length - 1;
-            currentSlideIndex = index;
+            if (index === currentSlideIndex) return;
+            showStaticNoise(() => {
+                currentSlideIndex = index;
+                window.location.hash = '#' + (index + 1);
+                updateClockFace(timeLeft);
+            });
         }
 
-        function checkEvents(timeLeft) {
+        function checkEvents(t) {
             const msgEl = document.getElementById('message');
             config.events.forEach(ev => {
-                if (timeLeft === ev.time) {
+                if (t === ev.time) {
                     msgEl.innerHTML = ev.message;
                     msgEl.style.display = 'block';
                     setTimeout(() => { msgEl.style.display = 'none'; }, 5000);
@@ -331,7 +338,7 @@
             });
         }
 
-        function startCountdown() {
+        function startCountdown(slideIndex) {
             if (countdownStarted) return;
             countdownStarted = true;
             document.getElementById('overlayText').style.display = 'none';
@@ -343,28 +350,15 @@
             startAngle = ((minuteAngle - 90) * Math.PI) / 180;
             endAngleFull = startAngle + (config.clockSettings.totalAngleDegrees * Math.PI) / 180;
 
-            let timeLeft = config.duration;
-            const slideDuration = config.duration / slides.length;
-            currentSlideIndex = 0;
+            timeLeft = config.duration;
+            currentSlideIndex = (typeof slideIndex === 'number') ? slideIndex : 0;
+            window.location.hash = '#' + (currentSlideIndex + 1);
             updateClockFace(timeLeft);
 
             countdownInterval = setInterval(() => {
                 timeLeft--;
-                const elapsed = config.duration - timeLeft;
-                const newSlideIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
-
-                if (newSlideIndex !== currentSlideIndex) {
-                    const nextIndex = newSlideIndex;
-                    showStaticNoise(() => {
-                        currentSlideIndex = nextIndex;
-                        updateClockFace(timeLeft);
-                    });
-                } else {
-                    updateClockFace(timeLeft);
-                }
-
+                updateClockFace(timeLeft);
                 checkEvents(timeLeft);
-
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
                     const msgEl = document.getElementById('message');
@@ -382,6 +376,8 @@
                 }
                 return;
             }
+            if (e.code === 'Space') { e.preventDefault(); goToSlide(currentSlideIndex + 1); return; }
+            if (e.code === 'Backspace') { e.preventDefault(); goToSlide(currentSlideIndex - 1); return; }
             if (e.code === 'ArrowRight') { goToSlide(currentSlideIndex + 1); return; }
             if (e.code === 'ArrowLeft') { goToSlide(currentSlideIndex - 1); return; }
             const digit = e.key;
@@ -437,7 +433,6 @@
             document.getElementById('bottomText').textContent = config.introText.bottom;
 
             preloadImages();
-            setTimeout(drawIntroFace, 300);
 
             setInterval(() => {
                 updateClockHands();
@@ -448,6 +443,17 @@
             document.addEventListener('keydown', handleKeydown);
             document.body.addEventListener('click', handleClick);
             initSwipeGestures();
+
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#')) {
+                const slideNum = parseInt(hash.slice(1), 10);
+                if (!isNaN(slideNum) && slideNum >= 1) {
+                    startCountdown(Math.min(slideNum - 1, slides.length - 1));
+                    return;
+                }
+            }
+
+            setTimeout(drawIntroFace, 300);
         }
 
         init();

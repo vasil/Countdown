@@ -168,7 +168,7 @@
                 ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
                 ctx.closePath();
                 ctx.clip();
-                ctx.globalAlpha = 0.7;
+                ctx.globalAlpha = 0.1;
                 ctx.drawImage(xface, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
             };
@@ -364,7 +364,8 @@
                 const autoIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
                 if (autoIndex > lastAutoIndex) {
                     lastAutoIndex = autoIndex;
-                    goToSlide(autoIndex);
+                    currentSlideIndex = autoIndex;
+                    window.location.hash = '#' + (autoIndex + 1);
                 }
                 updateClockFace(timeLeft);
                 checkEvents(timeLeft);
@@ -452,6 +453,17 @@
             document.addEventListener('keydown', handleKeydown);
             document.body.addEventListener('click', handleClick);
             initSwipeGestures();
+
+            window.addEventListener('hashchange', () => {
+                if (!countdownStarted) return;
+                const newHash = window.location.hash;
+                if (newHash && newHash.startsWith('#')) {
+                    const slideNum = parseInt(newHash.slice(1), 10);
+                    if (!isNaN(slideNum) && slideNum >= 1) {
+                        goToSlide(Math.min(slideNum - 1, slides.length - 1));
+                    }
+                }
+            });
 
             const hash = window.location.hash;
             if (hash && hash.startsWith('#')) {

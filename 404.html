@@ -138,9 +138,14 @@
             return last;
         }
 
+        function getBasePath() {
+            const parts = window.location.pathname.split('/');
+            return '/' + parts[1] + '/';
+        }
+
         async function loadConfig(name) {
             try {
-                const response = await fetch('/Countdown/' + name + '.json');
+                const response = await fetch(getBasePath() + name + '.json');
                 if (!response.ok) throw new Error('Not found');
                 return await response.json();
             } catch (e) {
@@ -151,7 +156,7 @@
         function show404() {
             document.title = '404 - Presentation Not Found';
             const xface = new Image();
-            xface.src = '/Countdown/xface.webp';
+            xface.src = getBasePath() + 'xface.webp';
             xface.onload = () => {
                 const canvas = document.getElementById('clockCanvas');
                 const ctx = canvas.getContext('2d');
@@ -176,7 +181,7 @@
             preloadedImages = [];
             slides.forEach((slide, index) => {
                 const img = new Image();
-                img.src = '/Countdown/' + slide.image;
+                img.src = getBasePath() + slide.image;
                 preloadedImages[index] = img;
             });
         }

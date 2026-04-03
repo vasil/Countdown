@@ -357,17 +357,20 @@
             window.location.hash = '#' + (currentSlideIndex + 1);
             updateClockFace(timeLeft);
 
+            const slideDuration = config.duration / slides.length;
             countdownInterval = setInterval(() => {
                 timeLeft--;
                 const elapsed = config.duration - timeLeft;
-                const slideDuration = config.duration / slides.length;
-                const autoIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
-                if (autoIndex > lastAutoIndex) {
-                    lastAutoIndex = autoIndex;
-                    currentSlideIndex = autoIndex;
-                    window.location.hash = '#' + (autoIndex + 1);
+                const newSlideIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
+                if (newSlideIndex !== currentSlideIndex) {
+                    showStaticNoise(() => {
+                        currentSlideIndex = newSlideIndex;
+                        window.location.hash = '#' + (newSlideIndex + 1);
+                        updateClockFace(timeLeft);
+                    });
+                } else {
+                    updateClockFace(timeLeft);
                 }
-                updateClockFace(timeLeft);
                 checkEvents(timeLeft);
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);

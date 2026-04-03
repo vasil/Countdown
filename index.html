@@ -169,7 +169,7 @@
                 ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
                 ctx.closePath();
                 ctx.clip();
-                ctx.globalAlpha = 0.1;
+                ctx.globalAlpha = 0.35;
                 ctx.drawImage(xface, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
             };
@@ -304,15 +304,23 @@
             const ctx = canvas.getContext('2d');
             playBuzz();
             const duration = config.effects.noiseTransitionDuration || 500;
+            const tileSize = 4;
             const interval = setInterval(() => {
-                const imageData = ctx.createImageData(canvas.width, canvas.height);
-                const buf = new Uint32Array(imageData.data.buffer);
-                for (let i = 0; i < buf.length; i++) {
-                    if (Math.random() < 0.2) {
-                        buf[i] = Math.random() < 0.5 ? 0xffffffff : 0xff000000;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.clip();
+                for (let y = 0; y < canvas.height; y += tileSize) {
+                    for (let x = 0; x < canvas.width; x += tileSize) {
+                        if (Math.random() < 0.2) {
+                            ctx.fillStyle = Math.random() < 0.5 ? '#ffffff' : '#000000';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                        }
                     }
                 }
-                ctx.putImageData(imageData, 0, 0);
+                ctx.restore();
             }, 50);
             setTimeout(() => { clearInterval(interval); onComplete(); }, duration);
         }
@@ -361,14 +369,9 @@
             const slideDuration = config.duration / slides.length;
             countdownInterval = setInterval(() => {
                 timeLeft--;
-                const elapsed = config.duration - timeLeft;
-                const newSlideIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
-                if (newSlideIndex !== currentSlideIndex) {
-                    showStaticNoise(() => {
-                        currentSlideIndex = newSlideIndex;
-                        window.location.hash = '#' + (newSlideIndex + 1);
-                        updateClockFace(timeLeft);
-                    });
+                const newIndex = Math.floor((config.duration - timeLeft) / slideDuration);
+                if (newIndex !== currentSlideIndex && newIndex < slides.length) {
+                    goToSlide(newIndex);
                 } else {
                     updateClockFace(timeLeft);
                 }

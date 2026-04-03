@@ -128,6 +128,7 @@
         let timeLeft = 0;
         let numberBuffer = '';
         let numberBufferTimer = null;
+        let lastAutoIndex = 0;
 
         function getPresentationName() {
             const parts = window.location.pathname.replace(/\/$/, '').split('/');
@@ -351,11 +352,19 @@
 
             timeLeft = config.duration;
             currentSlideIndex = (typeof slideIndex === 'number') ? slideIndex : 0;
+            lastAutoIndex = currentSlideIndex;
             window.location.hash = '#' + (currentSlideIndex + 1);
             updateClockFace(timeLeft);
 
             countdownInterval = setInterval(() => {
                 timeLeft--;
+                const elapsed = config.duration - timeLeft;
+                const slideDuration = config.duration / slides.length;
+                const autoIndex = Math.min(Math.floor(elapsed / slideDuration), slides.length - 1);
+                if (autoIndex !== lastAutoIndex) {
+                    lastAutoIndex = autoIndex;
+                    goToSlide(autoIndex);
+                }
                 updateClockFace(timeLeft);
                 checkEvents(timeLeft);
                 if (timeLeft <= 0) {

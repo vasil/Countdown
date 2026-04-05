@@ -2,6 +2,12 @@
   "title": "A Retired Programmer",
   "author": "Vasil Taneski",
   "duration": 900,
+  "duration_minutes": 15,
+  "scrolling_background": {
+    "source": "Screenshot_2026-04-05-22-23-22-053_com.strava.jpg",
+    "direction": "up",
+    "distance": "100%"
+  },
   "introText": {
     "top": "A\nRETIRED\nPROGRAMMER",
     "bottom": "Vasil\nTaneski"

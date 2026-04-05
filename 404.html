@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -123,6 +122,7 @@
         let currentSlideIndex = -1;
         let countdownStarted = false;
         let countdownInterval = null;
+        let autoSlideInterval = null;
         let startAngle = 0;
         let endAngleFull = 0;
         let timeLeft = 0;
@@ -317,7 +317,10 @@
         function goToSlide(index) {
             if (!countdownStarted) return;
             if (index < 0) index = 0;
-            if (index >= slides.length) index = slides.length - 1;
+            if (index >= slides.length) {
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                return;
+            }
             if (index === currentSlideIndex) return;
             showStaticNoise(() => {
                 currentSlideIndex = index;
@@ -360,11 +363,22 @@
                 checkEvents(timeLeft);
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
+                    if (autoSlideInterval) clearInterval(autoSlideInterval);
                     const msgEl = document.getElementById('message');
                     msgEl.innerHTML = 'Time is up!';
                     msgEl.style.display = 'block';
                 }
             }, 1000);
+
+            // Автоматска промена на слајдови
+            const timePerSlide = (config.duration / slides.length) * 1000;
+            autoSlideInterval = setInterval(() => {
+                if (currentSlideIndex < slides.length - 1) {
+                    goToSlide(currentSlideIndex + 1);
+                } else {
+                    clearInterval(autoSlideInterval);
+                }
+            }, timePerSlide);
         }
 
         function handleKeydown(e) {
@@ -375,10 +389,28 @@
                 }
                 return;
             }
-            if (e.code === 'Space') { e.preventDefault(); goToSlide(currentSlideIndex + 1); return; }
-            if (e.code === 'Backspace') { e.preventDefault(); goToSlide(currentSlideIndex - 1); return; }
-            if (e.code === 'ArrowRight') { goToSlide(currentSlideIndex + 1); return; }
-            if (e.code === 'ArrowLeft') { goToSlide(currentSlideIndex - 1); return; }
+            if (e.code === 'Space') { 
+                e.preventDefault(); 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex + 1); 
+                return; 
+            }
+            if (e.code === 'Backspace') { 
+                e.preventDefault(); 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex - 1); 
+                return; 
+            }
+            if (e.code === 'ArrowRight') { 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex + 1); 
+                return; 
+            }
+            if (e.code === 'ArrowLeft') { 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex - 1); 
+                return; 
+            }
             const digit = e.key;
             if (digit >= '0' && digit <= '9') {
                 numberBuffer += digit;
@@ -386,7 +418,10 @@
                 numberBufferTimer = setTimeout(() => {
                     const target = parseInt(numberBuffer, 10) - 1;
                     numberBuffer = '';
-                    if (!isNaN(target)) goToSlide(target);
+                    if (!isNaN(target)) {
+                        if (autoSlideInterval) clearInterval(autoSlideInterval);
+                        goToSlide(target);
+                    }
                 }, 600);
             }
         }
@@ -404,6 +439,7 @@
             clockEl.addEventListener('touchend', (e) => {
                 const dx = e.changedTouches[0].clientX - touchStartX;
                 if (Math.abs(dx) > 50) {
+                    if (autoSlideInterval) clearInterval(autoSlideInterval);
                     if (dx < 0) goToSlide(currentSlideIndex + 1);
                     else goToSlide(currentSlideIndex - 1);
                 }

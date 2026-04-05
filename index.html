@@ -359,9 +359,9 @@
             window.location.hash = '#' + (currentSlideIndex + 1);
             updateClockFace(timeLeft);
 
-            // Главна логика за одбројување на секундите
             countdownInterval = setInterval(() => {
                 timeLeft--;
+                updateClockHands(); // Ажурирај стрелки во реално време
                 updateClockFace(timeLeft);
                 checkEvents(timeLeft);
                 if (timeLeft <= 0) {
@@ -373,7 +373,7 @@
                 }
             }, 1000);
 
-            // Логика за автоматска промена на слајдови
+            // Автоматска навигација низ слајдовите
             const timePerSlide = (config.duration / slides.length) * 1000;
             autoSlideInterval = setInterval(() => {
                 if (currentSlideIndex < slides.length - 1) {

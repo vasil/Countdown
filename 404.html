@@ -5,14 +5,10 @@
     <title>URL Router</title>
     <script>
         var loc = window.location;
-        var pathName = loc.pathname.substring(1).replace(/\/$/, "");
-        var destination = loc.protocol + "//" + loc.hostname + (loc.port ? ":" + loc.port : "");
-        
-        if (pathName) {
-            loc.replace(destination + "/?p=" + pathName + loc.hash);
-        } else {
-            loc.replace(destination + "/?p=arp" + loc.hash);
-        }
+        var pathParts = loc.pathname.split('/').filter(Boolean);
+        var presentation = pathParts.pop() || 'arp';
+        var basePath = pathParts.length > 0 ? '/' + pathParts.join('/') + '/' : '/';
+        loc.replace(loc.protocol + "//" + loc.host + basePath + "?p=" + presentation + loc.hash);
     </script>
 </head>
 <body>

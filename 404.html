@@ -1,162 +1,500 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Presentation Router</title>
-<style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    color: #fff;
-    overflow: hidden;
-    font-family: monospace;
-  }
-  #viewport {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
-  .layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-  #scroll-layer { z-index: 1; }
-  #clock-layer { z-index: 2; }
-  #slide-layer { 
-    z-index: 3; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-  }
-  .scrolling-content {
-    width: 100%;
-    position: absolute;
-  }
-</style>
-</head>
-<body>
-<div id="viewport">
-  <div id="scroll-layer" class="layer"></div>
-  <div id="clock-layer" class="layer"></div>
-  <div id="slide-layer" class="layer"></div>
-</div>
-
-<script>
-  let slideData = [];
-  let totalDurationMs = 0;
-  let currentIndex = 0;
-  let autoAdvanceTimer = null;
-
-  async function initializePresentation() {
-    const pathSegments = window.location.pathname.split('/').filter(Boolean);
-    const presentationName = pathSegments.length > 0 ? pathSegments[0] : 'aaa';
-    
-    try {
-      const response = await fetch(`/${presentationName}.json`);
-      if (!response.ok) throw new Error('Configuration fetch failed');
-      const config = await response.json();
-      
-      slideData = config.slides;
-      totalDurationMs = config.duration_minutes * 60 * 1000;
-      
-      setupContinuousScroll(config.scrolling_background);
-      setupHistoryNavigation();
-      renderSlide(0);
-      startAutoAdvance();
-    } catch (error) {
-      console.error('Initialization error:', error);
-    }
-  }
-
-  function setupContinuousScroll(scrollConfig) {
-    if (!scrollConfig) return;
-    
-    const layer = document.getElementById('scroll-layer');
-    const img = document.createElement('img');
-    img.src = scrollConfig.source;
-    img.className = 'scrolling-content';
-    layer.appendChild(img);
-
-    const distance = scrollConfig.distance || '100%';
-    const translateYStart = scrollConfig.direction === 'up' ? '0' : `-${distance}`;
-    const translateYEnd = scrollConfig.direction === 'up' ? `-${distance}` : '0';
-
-    img.animate([
-      { transform: `translateY(${translateYStart})` },
-      { transform: `translateY(${translateYEnd})` }
-    ], {
-      duration: totalDurationMs,
-      iterations: 1,
-      fill: 'forwards',
-      easing: 'linear'
-    });
-  }
-
-  function renderSlide(index) {
-    currentIndex = index;
-    const layer = document.getElementById('slide-layer');
-    layer.innerHTML = '';
-    
-    const slide = slideData[index];
-    if (slide && slide.image) {
-      const img = document.createElement('img');
-      img.src = slide.image;
-      img.style.maxWidth = '100%';
-      img.style.maxHeight = '100%';
-      layer.appendChild(img);
-    }
-  }
-
-  function startAutoAdvance() {
-    if (autoAdvanceTimer) clearInterval(autoAdvanceTimer);
-    const slideIntervalMs = totalDurationMs / slideData.length;
-    
-    autoAdvanceTimer = setInterval(() => {
-      if (currentIndex < slideData.length - 1) {
-        currentIndex++;
-        window.history.pushState({ index: currentIndex }, '');
-        renderSlide(currentIndex);
-      }
-    }, slideIntervalMs);
-  }
-
-  function setupHistoryNavigation() {
-    window.history.replaceState({ index: 0 }, '');
-    
-    window.addEventListener('popstate', (event) => {
-      if (currentIndex === slideData.length - 1) {
-        window.close();
-        return;
-      }
-      
-      if (event.state && event.state.index !== undefined) {
-        currentIndex = event.state.index;
-        renderSlide(currentIndex);
-        startAutoAdvance(); 
-      }
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.code === 'Space') {
-        if (currentIndex < slideData.length - 1) {
-          currentIndex++;
-          window.history.pushState({ index: currentIndex }, '');
-          renderSlide(currentIndex);
-          startAutoAdvance();
+    <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Content-Language" content="en">
+    <link rel="icon" href="favicon32.ico" type="image/x-icon">
+    <title>Countdown Presentation</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            cursor: pointer;
+            user-select: none;
         }
-      }
-    });
-  }
 
-  document.addEventListener('DOMContentLoaded', initializePresentation);
-</script>
+        #clock {
+            position: relative;
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            transform: rotate(0deg);
+            z-index: 10;
+        }
+
+        .hour-hand {
+            width: 10px;
+            height: 25%;
+            background-color: black;
+            border-radius: 5px;
+            margin-left: -5px;
+        }
+
+        .minute-hand {
+            width: 8px;
+            height: 35%;
+            background-color: black;
+            border-radius: 4px;
+            margin-left: -4px;
+        }
+
+        .second-hand {
+            width: 4px;
+            height: 45%;
+            border-radius: 2px;
+            margin-left: -2px;
+        }
+
+        #message {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5em;
+            text-align: center;
+            color: white;
+            display: none;
+            font-family: "Courier New", Courier, monospace;
+            z-index: 20;
+            text-shadow: 1px 1px 3px black;
+        }
+
+        #clockCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #overlayText {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+            font-family: "Courier New", Courier, monospace;
+            z-index: 5;
+        }
+
+        #topText {
+            font-size: 7vmin;
+            font-weight: 800;
+            color: black;
+            margin-top: 11%;
+            white-space: pre-line;
+            text-align: center;
+        }
+
+        #bottomText {
+            font-size: 7vmin;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 15%;
+            white-space: pre-line;
+            text-align: center;
+        }
+    </style>
+</head>
+<body lang="en">
+    <div id="message"></div>
+    <div id="clock">
+        <canvas id="clockCanvas"></canvas>
+        <div id="hour" class="hand hour-hand"></div>
+        <div id="minute" class="hand minute-hand"></div>
+        <div id="second" class="hand second-hand"></div>
+        <div id="overlayText">
+            <div id="topText"></div>
+            <div id="bottomText"></div>
+        </div>
+    </div>
+
+    <script>
+        let config = null;
+        let slides = [];
+        let preloadedImages = [];
+        let currentSlideIndex = -1;
+        let countdownStarted = false;
+        let countdownInterval = null;
+        let autoSlideInterval = null;
+        let startAngle = 0;
+        let endAngleFull = 0;
+        let timeLeft = 0;
+        let numberBuffer = '';
+        let numberBufferTimer = null;
+
+        function getPresentationName() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('p') || 'arp';
+        }
+
+        async function loadConfig(name) {
+            try {
+                const response = await fetch('./' + name + '.json');
+                if (!response.ok) throw new Error('Not found');
+                return await response.json();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function show404() {
+            document.title = '404 - Presentation Not Found';
+            const xface = new Image();
+            xface.src = './xface.webp';
+            xface.onload = () => {
+                const canvas = document.getElementById('clockCanvas');
+                const ctx = canvas.getContext('2d');
+                resizeCanvas();
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
+                ctx.closePath();
+                ctx.clip();
+                ctx.globalAlpha = 0.7;
+                ctx.drawImage(xface, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            };
+            document.getElementById('topText').textContent = '404';
+            document.getElementById('bottomText').textContent = 'Presentation\nnot found';
+            document.getElementById('hour').style.display = 'none';
+            document.getElementById('minute').style.display = 'none';
+            document.getElementById('second').style.display = 'none';
+        }
+
+        function preloadImages() {
+            preloadedImages = [];
+            slides.forEach((slide, index) => {
+                const img = new Image();
+                img.src = './' + slide.image;
+                preloadedImages[index] = img;
+            });
+        }
+
+        function resizeCanvas() {
+            const clockEl = document.getElementById('clock');
+            const canvas = document.getElementById('clockCanvas');
+            const rect = clockEl.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        function updateClockHands() {
+            const now = new Date();
+            const seconds = now.getSeconds();
+            const minutes = now.getMinutes();
+            const hours = now.getHours() % 12;
+            const secondDeg = (seconds / 60) * 360;
+            const minuteDeg = (minutes / 60) * 360 + (seconds / 60) * 6;
+            const hourDeg = (hours / 12) * 360 + (minutes / 60) * 30;
+            document.getElementById('second').style.transform = `rotate(${secondDeg}deg)`;
+            document.getElementById('minute').style.transform = `rotate(${minuteDeg}deg)`;
+            document.getElementById('hour').style.transform = `rotate(${hourDeg}deg)`;
+        }
+
+        function drawIntroFace() {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.clip();
+            ctx.globalAlpha = config.effects.introImageOpacity || 0.7;
+            if (preloadedImages[0] && preloadedImages[0].complete) {
+                ctx.drawImage(preloadedImages[0], 0, 0, canvas.width, canvas.height);
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
+        function updateClockFace(t) {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const totalTime = config.duration;
+            const elapsedTime = totalTime - t;
+            const elapsedFraction = elapsedTime / totalTime;
+            const totalAngleRad = (config.clockSettings.totalAngleDegrees * Math.PI) / 180;
+            const angleElapsed = elapsedFraction * totalAngleRad;
+            const currentAngle = startAngle + angleElapsed;
+            const lastWarnSecs = config.clockSettings.lastWarningMinutes * 60;
+            const lastWarnAngle = (lastWarnSecs / totalTime) * totalAngleRad;
+            const lastWarnStartAngle = endAngleFull - lastWarnAngle;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.clip();
+
+            ctx.globalAlpha = config.effects.slideImageOpacity || 0.9;
+            const img = preloadedImages[currentSlideIndex];
+            if (img && img.complete && img.naturalWidth !== 0) {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            }
+            ctx.globalAlpha = 1;
+
+            ctx.globalAlpha = config.effects.warningZoneOpacity || 0.4;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, lastWarnStartAngle, endAngleFull, false);
+            ctx.closePath();
+            ctx.fillStyle = config.colors.warningZone || 'lightcoral';
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, startAngle, currentAngle, false);
+            ctx.closePath();
+            ctx.fillStyle = config.colors.elapsed || 'rgba(0,0,0,0.8)';
+            ctx.fill();
+
+            if (t > lastWarnSecs) {
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, canvas.height / 2);
+                ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2, currentAngle, lastWarnStartAngle, false);
+                ctx.closePath();
+                ctx.fillStyle = config.colors.remainingTime || 'darkred';
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.restore();
+        }
+
+        function playBuzz() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(config.effects.buzzFrequency || 100, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                setTimeout(() => { osc.stop(); audioCtx.close(); }, config.effects.buzzDuration || 500);
+            } catch (e) {}
+        }
+
+        function showStaticNoise(onComplete) {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            playBuzz();
+            const duration = config.effects.noiseTransitionDuration || 500;
+            const interval = setInterval(() => {
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const buf = new Uint32Array(imageData.data.buffer);
+                for (let i = 0; i < buf.length; i++) {
+                    if (Math.random() < 0.2) {
+                        buf[i] = Math.random() < 0.5 ? 0xffffffff : 0xff000000;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            }, 50);
+            setTimeout(() => { clearInterval(interval); onComplete(); }, duration);
+        }
+
+        function goToSlide(index) {
+            if (!countdownStarted) return;
+            if (index < 0) index = 0;
+            if (index >= slides.length) {
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                return;
+            }
+            if (index === currentSlideIndex) return;
+            showStaticNoise(() => {
+                currentSlideIndex = index;
+                window.location.hash = '#' + (index + 1);
+                updateClockFace(timeLeft);
+            });
+        }
+
+        function checkEvents(t) {
+            const msgEl = document.getElementById('message');
+            config.events.forEach(ev => {
+                if (t === ev.time) {
+                    msgEl.innerHTML = ev.message;
+                    msgEl.style.display = 'block';
+                    setTimeout(() => { msgEl.style.display = 'none'; }, 5000);
+                }
+            });
+        }
+
+        function startCountdown(slideIndex) {
+            if (countdownStarted) return;
+            countdownStarted = true;
+            document.getElementById('overlayText').style.display = 'none';
+
+            const now = new Date();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const minuteAngle = (minutes / 60) * 360 + (seconds / 60) * 6;
+            startAngle = ((minuteAngle - 90) * Math.PI) / 180;
+            endAngleFull = startAngle + (config.clockSettings.totalAngleDegrees * Math.PI) / 180;
+
+            timeLeft = config.duration;
+            currentSlideIndex = (typeof slideIndex === 'number') ? slideIndex : 0;
+            window.location.hash = '#' + (currentSlideIndex + 1);
+            updateClockFace(timeLeft);
+
+            countdownInterval = setInterval(() => {
+                timeLeft--;
+                updateClockHands(); // Ажурирај стрелки во реално време
+                updateClockFace(timeLeft);
+                checkEvents(timeLeft);
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    if (autoSlideInterval) clearInterval(autoSlideInterval);
+                    const msgEl = document.getElementById('message');
+                    msgEl.innerHTML = 'Time is up!';
+                    msgEl.style.display = 'block';
+                }
+            }, 1000);
+
+            // Автоматска навигација низ слајдовите
+            const timePerSlide = (config.duration / slides.length) * 1000;
+            autoSlideInterval = setInterval(() => {
+                if (currentSlideIndex < slides.length - 1) {
+                    goToSlide(currentSlideIndex + 1);
+                } else {
+                    clearInterval(autoSlideInterval);
+                }
+            }, timePerSlide);
+        }
+
+        function handleKeydown(e) {
+            if (!countdownStarted) {
+                if (e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    startCountdown();
+                }
+                return;
+            }
+            if (e.code === 'Space') { 
+                e.preventDefault(); 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex + 1); 
+                return; 
+            }
+            if (e.code === 'Backspace') { 
+                e.preventDefault(); 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex - 1); 
+                return; 
+            }
+            if (e.code === 'ArrowRight') { 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex + 1); 
+                return; 
+            }
+            if (e.code === 'ArrowLeft') { 
+                if (autoSlideInterval) clearInterval(autoSlideInterval);
+                goToSlide(currentSlideIndex - 1); 
+                return; 
+            }
+            const digit = e.key;
+            if (digit >= '0' && digit <= '9') {
+                numberBuffer += digit;
+                clearTimeout(numberBufferTimer);
+                numberBufferTimer = setTimeout(() => {
+                    const target = parseInt(numberBuffer, 10) - 1;
+                    numberBuffer = '';
+                    if (!isNaN(target)) {
+                        if (autoSlideInterval) clearInterval(autoSlideInterval);
+                        goToSlide(target);
+                    }
+                }, 600);
+            }
+        }
+
+        function handleClick() {
+            if (!countdownStarted) startCountdown();
+        }
+
+        function initSwipeGestures() {
+            const clockEl = document.getElementById('clock');
+            let touchStartX = 0;
+            clockEl.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].clientX;
+            }, { passive: true });
+            clockEl.addEventListener('touchend', (e) => {
+                const dx = e.changedTouches[0].clientX - touchStartX;
+                if (Math.abs(dx) > 50) {
+                    if (autoSlideInterval) clearInterval(autoSlideInterval);
+                    if (dx < 0) goToSlide(currentSlideIndex + 1);
+                    else goToSlide(currentSlideIndex - 1);
+                }
+            }, { passive: true });
+        }
+
+        async function init() {
+            resizeCanvas();
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                if (!countdownStarted) drawIntroFace();
+            });
+
+            const name = getPresentationName();
+            config = await loadConfig(name);
+
+            if (!config) {
+                show404();
+                return;
+            }
+
+            document.title = config.title + ' — ' + config.author;
+            slides = config.slides;
+            document.getElementById('second').style.backgroundColor = config.colors.secondHand || 'red';
+            document.getElementById('topText').textContent = config.introText.top;
+            document.getElementById('bottomText').textContent = config.introText.bottom;
+
+            preloadImages();
+
+            setInterval(() => {
+                updateClockHands();
+                if (!countdownStarted) drawIntroFace();
+            }, 1000);
+            updateClockHands();
+
+            document.addEventListener('keydown', handleKeydown);
+            document.body.addEventListener('click', handleClick);
+            initSwipeGestures();
+
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#')) {
+                const slideNum = parseInt(hash.slice(1), 10);
+                if (!isNaN(slideNum) && slideNum >= 1) {
+                    startCountdown(Math.min(slideNum - 1, slides.length - 1));
+                    return;
+                }
+            }
+
+            setTimeout(drawIntroFace, 300);
+        }
+
+        init();
+    </script>
 </body>
 </html>

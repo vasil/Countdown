@@ -25,6 +25,10 @@
       "image": "xface.webp"
     },
     {
+      "image": "training-log.webp",
+      "scroll": true
+    },
+    {
       "image": "marathon-moment.webp"
     }
   ],

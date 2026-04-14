@@ -442,6 +442,16 @@
             }, { passive: true });
         }
 
+        function toMonospace(str) {
+            return [...str].map(c => {
+                const code = c.codePointAt(0);
+                if (code >= 65 && code <= 90)  return String.fromCodePoint(0x1D670 + code - 65);
+                if (code >= 97 && code <= 122) return String.fromCodePoint(0x1D68A + code - 97);
+                if (code >= 48 && code <= 57)  return String.fromCodePoint(0x1D7F6 + code - 48);
+                return c;
+            }).join('');
+        }
+
         async function init() {
             resizeCanvas();
             window.addEventListener('resize', () => {
@@ -460,8 +470,8 @@
             document.title = config.title + ' — ' + config.author;
             slides = config.slides;
             document.getElementById('second').style.backgroundColor = config.colors.secondHand || 'red';
-            document.getElementById('topText').textContent = config.introText.top;
-            document.getElementById('bottomText').textContent = config.introText.bottom;
+            document.getElementById('topText').textContent = toMonospace(config.introText.top);
+            document.getElementById('bottomText').textContent = toMonospace(config.introText.bottom);
 
             preloadImages();
 

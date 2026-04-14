@@ -172,8 +172,8 @@
                 ctx.drawImage(xface, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
             };
-            document.getElementById('topText').textContent = '404';
-            document.getElementById('bottomText').textContent = 'Presentation\nnot found';
+            document.getElementById('topText').textContent = toMonospace('404');
+            document.getElementById('bottomText').textContent = toMonospace('Presentation\nnot found');
             document.getElementById('hour').style.display = 'none';
             document.getElementById('minute').style.display = 'none';
             document.getElementById('second').style.display = 'none';

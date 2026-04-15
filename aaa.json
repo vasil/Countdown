@@ -25,6 +25,10 @@
       "image": "xface.webp"
     },
     {
+      "image": "timelog.webp",
+      "scroll": "up"
+    },
+    {
       "image": "marathon-moment.webp"
     }
   ],

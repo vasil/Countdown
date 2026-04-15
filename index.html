@@ -249,7 +249,16 @@
             ctx.globalAlpha = config.effects.slideImageOpacity || 0.9;
             const img = preloadedImages[currentSlideIndex];
             if (img && img.complete && img.naturalWidth !== 0) {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const slide = slides[currentSlideIndex];
+                if (slide && slide.scroll === 'up') {
+                    const visibleSourceH = canvas.height / (canvas.width / img.naturalWidth);
+                    const totalScroll = Math.max(img.naturalHeight - visibleSourceH, 0);
+                    // t goes from config.duration → 0; start at bottom (sy=totalScroll), end at top (sy=0)
+                    const sy = (t / config.duration) * totalScroll;
+                    ctx.drawImage(img, 0, sy, img.naturalWidth, visibleSourceH, 0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                }
             }
             ctx.globalAlpha = 1;
 
